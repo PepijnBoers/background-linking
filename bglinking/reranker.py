@@ -202,6 +202,5 @@ for topic_num, topic in tqdm(topics):  # tqdm(topics.items()):
 
 if args.year != 20:
     # Evaluate performance with trec_eval.
-    print("\nTrec_eval scores:\n")
     os.system(
         f"/opt/anserini-tools/eval/trec_eval.9.0.4/trec_eval -c -M1000 -m map -m ndcg_cut -m P.10 resources/topics-and-qrels/{args.qrels} resources/output/{args.output}")

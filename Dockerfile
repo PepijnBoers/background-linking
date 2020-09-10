@@ -1,4 +1,3 @@
-#FROM openkbs/jdk-mvn-py3
 FROM adoptopenjdk/openjdk11
 
 RUN apt-get update && \
