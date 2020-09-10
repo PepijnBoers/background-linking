@@ -285,7 +285,7 @@ def entity_to_query(entity: str) -> str:
 
 def write_run_arguments_to_log(**kwargs):
     run_name = kwargs['output']
-    with open(f'output/logs/{run_name[15:]}', 'w+') as f:
+    with open(f'resources/output/logs/{run_name}', 'w+') as f:
         for arg, value in kwargs.items():
             f.write(f'{arg}: {value}\n')
 

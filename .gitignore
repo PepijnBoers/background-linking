@@ -26,3 +26,4 @@ bglinking/resources/Index/*/
 bglinking/resources/embeddings/*/
 bglinking/resources/topics-and-qrels/topics.backgroundlinking20.txt
 bglinking/resources/candidates/*.txt
+bglinking/resources/output/*.txt
