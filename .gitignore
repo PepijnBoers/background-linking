@@ -23,7 +23,6 @@ bglinking/database_utils/*.db
 bglinking/database_utils/examples
 bglinking/resources/db/*.db
 bglinking/resources/Index/*/
-bglinking/resources/embeddings/*.txt
-bglinking/resources/embeddings/**
-bglinking/resources/topics-and-qrels/**
-bglinking/resources/candidates/**
+bglinking/resources/embeddings/*/
+bglinking/resources/topics-and-qrels/topics.backgroundlinking20.txt
+bglinking/resources/candidates/*.txt
