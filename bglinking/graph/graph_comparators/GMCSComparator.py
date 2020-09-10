@@ -5,7 +5,6 @@ import operator
 import warnings
 
 from bglinking.general_utils import utils
-from bglinking.graph import graph_utils
 from bglinking.graph.graph_comparators.InformalGraphComparatorInterface import InformalGraphComparatorInterface
 
 

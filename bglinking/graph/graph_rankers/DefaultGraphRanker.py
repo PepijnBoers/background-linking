@@ -2,7 +2,6 @@ import numpy as np
 from collections import defaultdict
 
 from bglinking.general_utils import utils
-from bglinking.graph import graph_utils
 from bglinking.graph.graph_rankers.InformalGraphRankerInterface import InformalGraphRankerInterface
 
 # Modified from https://github.com/BrambleXu/news-graph

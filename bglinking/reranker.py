@@ -12,7 +12,6 @@ from pyserini import analysis
 
 from bglinking.general_utils import utils
 from bglinking.database_utils import db_utils
-from bglinking.graph import graph_utils
 from bglinking.graph.graph import Graph
 from bglinking.graph.graph_comparators.GMCSComparator import GMCSComparator
 
