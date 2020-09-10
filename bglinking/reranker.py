@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--index', dest='index', default='lucene-index.core18.pos+docvectors+rawdocs_all',
                     help='specify the corpus index')
 
-parser.add_argument('--db', dest='db', default='entity_database_20.db',
+parser.add_argument('--db', dest='db', default='entity_database_19.db',
                     help='specify the database')
 
 parser.add_argument('--embedding', dest='embedding', default='',
@@ -32,13 +32,13 @@ parser.add_argument('--stats', dest='stats', default=False,
 parser.add_argument('--year', dest='year', default=None, type=int,
                     help='TREC year 18, 19 or 20')
 
-parser.add_argument('--topics', dest='topics', default='topics.backgroundlinking20.txt',
+parser.add_argument('--topics', dest='topics', default='topics.backgroundlinking19.txt',
                     help='specify qrels file')
 
 parser.add_argument('--candidates', dest='candidates', default='run.backgroundlinking20.bm25+rm3.topics.backgroundlinking20.txt',
                     help='Results file that carries candidate docs')
 
-parser.add_argument('--qrels', dest='qrels', default='newsir19-qrels-background.txt',
+parser.add_argument('--qrels', dest='qrels', default='qrels.backgroundlinking19.txt',
                     help='specify qrels file')
 
 parser.add_argument('--output', dest='output', default='output_graph.txt',
