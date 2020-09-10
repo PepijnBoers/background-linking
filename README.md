@@ -6,7 +6,7 @@ Code to replicate experiments for background linking in TREC News
 After cloning the repository build the docker image using the dockerfile:
 
 ```
-docker build -t bg-image:1.0 .
+docker build . -t bglink
 ```
 
 ## Resources
@@ -73,20 +73,18 @@ Store in `bglinking/resources/topics-and-qrels`
 # Experiments Graph Configurations
 ## Graph [100 terms, no edges]
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --nr-terms 100 --output simple_graph_19.txt --run-tag simple_graph
 ```
 
 ## Graph [100 terms, edges based on text distance]
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --nr-terms 100 --text-distance 1 --output simple_graph_text_distance_19.txt \
            --run-tag simple_graph_text_distance
@@ -94,10 +92,9 @@ docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/re
 
 ## Graph [100 terms, edges based on word embeddings]
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --embedding WKN-vectors/WKN-vectors.bin \
            --nr-terms 100 --term-embedding 1 --output simple_graph_term_embedding_19.txt \
@@ -106,10 +103,9 @@ docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/re
 
 ## Graph [100 terms - weights based on term position]
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --nr-terms 100 --term-position 1 --output simple_graph_term_position_19.txt \
            --run-tag simple_graph_term_position
@@ -117,29 +113,26 @@ docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/re
 
 ## Graph configurations combining: term position, text distance & word embedding.
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --nr-terms 100 --term-position 1 --text-distance 1 \
            --output simple_graph_term_position_text_rank_19.txt \
            --run-tag simple_graph_term_position_text_rank
 
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --embedding WKN-vectors/WKN-vectors.bin \
            --nr-terms 100 --term-position 1 --term-embedding 1 \
            --output simple_graph_term_position_text_embedding_19.txt \
            --run-tag simple_graph_term_position_text_embedding
 
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --embedding WKN-vectors/WKN-vectors.bin \
            --nr-terms 100 --term-position 1 --text-distance 1 --term-embedding 1 \
@@ -149,20 +142,18 @@ docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/re
 
 ## Add named entities to graph nodes (simplest configuration)
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --use-entities --output only_entities_19.txt --run-tag only_entities
 ```
 
 ## Add named entities to graph nodes (best performing run)
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --embedding WKN-vectors/WKN-vectors.bin \
            --nr-terms 100 --term-position 1 --term-embedding 1 --use-entities \
@@ -172,10 +163,9 @@ docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/re
 
 ## Test effect of novelty algorithm (without named entities)
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --embedding WKN-vectors/WKN-vectors.bin \
            --nr-terms 100 --term-position 1 --term-embedding 1 --novelty 0.05 \
@@ -185,10 +175,9 @@ docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/re
 
 ## Test effect of novelty algorithm (with named entities)
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --embedding WKN-vectors/WKN-vectors.bin \
            --nr-terms 100 --term-position 1 --term-embedding 1 --use-entities --novelty 0.05 \
@@ -197,10 +186,9 @@ docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/re
 
 ## Test best run with TextRank algorithm
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --embedding WKN-vectors/WKN-vectors.bin \
            --nr-terms 100 --term-position 1 --term-embedding 1 --textrank \
@@ -210,10 +198,9 @@ docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/re
 
 ## Test diversification
 ```
-docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources \
-           bg-image:1.0 --index lucene-index.core18.pos+docvectors+rawdocs_all \
-           --db entity_database_19.db --topics topics.backgroundlinking19.txt \
-           --qrels qrels.backgroundlinking19.txt \
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources bglink \
+           --index lucene-index.core18.pos+docvectors+rawdocs_all --db entity_database_19.db 
+           --topics topics.backgroundlinking19.txt --qrels qrels.backgroundlinking19.txt \
            --candidates run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt \
            --embedding WKN-vectors/WKN-vectors.bin \
            --nr-terms 100 --term-position 1 --term-embedding 1 --diversify --use-entities \

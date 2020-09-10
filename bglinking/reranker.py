@@ -96,8 +96,8 @@ if args.year is not None:
 
 
 print(f'\nIndex: resources/Index/{args.index}')
-print(f'Topics will be retrieved from resources/topics-and-qrels/{args.topics}')
-print(f'Results will be stored in resources/output/runs/{args.output}\n')
+print(f'Topics were retrieved from resources/topics-and-qrels/{args.topics}')
+print(f'Results are stored in resources/output/runs/{args.output}\n')
 utils.create_new_file_for_sure(f'resources/output/{args.output}')
 
 # '../database_utils/db/rel_entity_reader.db'
@@ -105,10 +105,9 @@ conn, cursor = db_utils.connect_db(f'resources/db/{args.db}')
 
 # load word embeddings
 if args.term_embedding > 0 and args.embedding != '':
-    print('Loading embeddings..')
     embeddings = utils.load_word_vectors(
         f'resources/embeddings/{args.embedding}')
-    print('Succesfully loaded!')
+    print('Embeddings sucessfully loaded!')
 else:
     embeddings = {}
 
@@ -201,7 +200,7 @@ for topic_num, topic in tqdm(topics):  # tqdm(topics.items()):
     utils.write_to_results_file(
         sorted_ranking, query_num, args.run_tag, f'resources/output/{args.output}')
 
-if args.year < 20:
+if args.year != 20:
     # Evaluate performance with trec_eval.
     print("\nTrec_eval scores:\n")
     os.system(
