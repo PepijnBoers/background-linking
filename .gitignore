@@ -27,3 +27,10 @@ bglinking/resources/embeddings/*/
 bglinking/resources/topics-and-qrels/topics.backgroundlinking20.txt
 bglinking/resources/candidates/*.txt
 bglinking/resources/output/*.txt
+
+# exceptions for sample resources
+!bglinking/resources/Index/lucene-index.sample/
+!bglinking/database_utils/sample.db
+!bglinking/resources/candidates/candidates.sample.txt
+!bglinking/resources/topics-and-qrels/topics.sample.txt
+!bglinking/resources/topics-and-qrels/qrels.sample.txt

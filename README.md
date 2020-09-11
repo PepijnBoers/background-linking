@@ -9,7 +9,18 @@ After cloning the repository build the docker image using the dockerfile:
 docker build . -t blimg
 ```
 
+Test the setup with sample resources:
+```
+docker run --rm -v $PWD/bglinking/resources:/opt/background-linking/bglinking/resources blimg \
+           --index lucene-index.sample --db sample.db --topics topics.sample.txt \
+           --qrels qrels.sample.txt --candidates candidates.sample.txt \
+           --nr-terms 100 --output sample.txt --run-tag sample
+```
+The `ndcg_cut_5` should be 0.7505.
+
 ## Resources
+In order to reproduce the experiments, you need to specify the exact same resources as described below. 
+
 - index: Index of the Washington Post Corpus (v2 or v3)
 - db: Database with terms and named entities for all topic/candidate docs
 - embeddings: Word embedding file
