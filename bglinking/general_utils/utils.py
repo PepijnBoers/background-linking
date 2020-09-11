@@ -196,7 +196,7 @@ def calc_tfidf_term(term: str, docid: str, index_utils, ne_tf_dict, graph_list) 
     return tfidf(tf, df)
 
 
-def create_top_n_tfidf_vector(index_utils, docid: str, n: int, total_N=595031) -> dict:
+def create_top_n_tfidf_vector(index_utils, docid: str, n: int, t: int, total_N=595031) -> dict:
     """Create list of top N terms with highest tfidf in a document accompanied with their tf."""
     # retrieve already analyzed terms in dict: tf
     tf = index_utils.get_document_vector(docid)
@@ -213,7 +213,7 @@ def create_top_n_tfidf_vector(index_utils, docid: str, n: int, total_N=595031) -
 
     # calcute tfidf for each term and store in dict.
     terms_tfidf = {term: tfidf(tf[term], df[term], total_N) for term in filtered_tf.keys()
-                   if tfidf(tf[term], df[term], total_N) >= 3.5}
+                   if tfidf(tf[term], df[term], total_N) >= t}
 
     # Sort terms based on tfidf score.
     tfidf_terms_sorted = {term: tf[term] for term, tfidf in sorted(

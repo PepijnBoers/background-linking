@@ -8,7 +8,6 @@ from bglinking.database_utils import db_utils
 from bglinking.database_utils.create_db import create_db
 
 from pyserini import index
-from pyserini.search import get_topics
 
 from tqdm import tqdm
 from collections import defaultdict
@@ -18,15 +17,11 @@ from collections import defaultdict
 IP_ADDRESS = "https://rel.cs.ru.nl/api"
 
 
-def get_docids(year: str, topics_only: bool) -> list:
-    print(f'type: {type(year)}, {year}, {year==20}')
-    res_file = f'../output/runs/run.backgroundlinking{year}.bm25+rm3.topics.backgroundlinking{year}.txt'
+def get_docids(topics: str, candidates:str, topics_only: bool) -> list:
+    res_file = f'../resources/candidates/{candidates}'
     qid_docids = utils.read_docids_from_file(res_file)
-    if year == 20:
-        topic_docids = utils.read_topic_ids_from_file('../resources/topics-and-qrels/topics.backgroundlinking20.txt')
-    else:
-        topic_docids = [topic['title'] for topic in get_topics(f'trec20{year}_bl').values()]
-    
+    topic_docids = utils.read_topic_ids_from_file(f'../resources/topics-and-qrels/{topics}')
+
     if topics_only:
         return topic_docids
     else:
@@ -41,8 +36,10 @@ if __name__ == "__main__":
                         help='Database name without .db or path')
     parser.add_argument('--extractor', dest='extractor', default='rel',
                         help='Module for entity extraction (rel or spacy)')
-    parser.add_argument('--year', dest='year', default='20', type=int,
-                        help='Year of TREC News background linking edition')
+    parser.add_argument('--candidates', dest='candidates', default='run.backgroundlinking19.bm25+rm3.topics.backgroundlinking19.txt',
+                        help='File with candidates documents (ranking)')
+    parser.add_argument('--topics', dest='topics', default='topics.backgroundlinking19.txt', 
+                        help='Topic file')
     parser.add_argument('--topics-only', dest='topics_only', default=False, action='store_true',
                         help='Use only topic ids')
     parser.add_argument('-n', dest='n', default=100, type=int,
@@ -60,7 +57,7 @@ if __name__ == "__main__":
     total_docs = index_utils.stats()['non_empty_documents']
 
     # Docids
-    all_docids = get_docids(args.year, args.topics_only)
+    all_docids = get_docids(args.topics, args.candidates, args.topics_only)
 
     # Connect Database
     conn, cursor = db_utils.connect_db(f'../resources/db/{args.name}.db')
@@ -73,7 +70,7 @@ if __name__ == "__main__":
 
         # Obtain top n tfidf terms in doc
         tfidf_terms = utils.create_top_n_tfidf_vector(
-            index_utils, docid, n=args.n, total_N=total_docs)
+            index_utils, docid, n=args.n, t=3.5, total_N=total_docs)
 
         # Keep track of entity/term locations
         location_entities = {}
@@ -92,7 +89,7 @@ if __name__ == "__main__":
             if args.extractor == 'rel':
                 document = {"text": content, "spans": [], }
                 rel_request = requests.post("{}".format(IP_ADDRESS), json=document).json()
-                location_entities[i] = [(entity[3], entity[6]) for entity in rel_request]
+                location_entities[i] = [(entity[3], entity[5]) for entity in rel_request]
 
         # Format tfidf terms
         terms = [f'{term};;;{locations};;;{tfidf_terms[term]}' 
