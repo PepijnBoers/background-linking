@@ -48,7 +48,7 @@ class Node:
         self.__tf = tf
 
     def __str__(self):
-        if self.__node_type is not 'term':
+        if self.__node_type != 'term':
             name = self.__name.replace(' ', '_')
             return f'ENTITY/{name}'
         else:
