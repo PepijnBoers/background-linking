@@ -31,7 +31,7 @@ def turn_into_dict(source: str) -> dict:
         ])
 
         def visit_Name(self, node):
-            if not node.id in self.ALLOWED_NAMES:
+            if node.id not in self.ALLOWED_NAMES:
                 raise RuntimeError(f"Name access to {node.id} is not allowed")
 
             # traverse to child nodes

@@ -1,11 +1,9 @@
-import sys
 from collections import defaultdict
 
-from bglinking.general_utils import utils
-
-from bglinking.graph.graph_builders.DefaultGraphBuilder import DefaultGraphBuilder
-from bglinking.graph.graph_rankers.DefaultGraphRanker import DefaultGraphRanker
+from bglinking.graph.graph_builders.DefaultGraphBuilder import \
+    DefaultGraphBuilder
 from bglinking.graph.graph_comparators.GMCSComparator import GMCSComparator
+from bglinking.graph.graph_rankers.DefaultGraphRanker import DefaultGraphRanker
 
 # [modified] MIT license bramblu
 
