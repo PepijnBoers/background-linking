@@ -4,8 +4,9 @@ import logging
 import numpy as np
 from bglinking.database_utils import db_utils as db_utils
 from bglinking.general_utils import utils
-from bglinking.graph.graph_builders.InformalGraphBuilderInterface import \
-    InformalGraphBuilderInterface
+from bglinking.graph.graph_builders.InformalGraphBuilderInterface import (
+    InformalGraphBuilderInterface,
+)
 from bglinking.graph.Node import Node
 
 
@@ -50,66 +51,21 @@ class DefaultGraphBuilder(InformalGraphBuilderInterface):
             ]
 
             # Create nodes for tfidf terms
-            for term in terms[
-                :nr_terms
-            ]:  # [['Washington Redskins', '[30]', '1', 'ORG']]
+            for term in terms:  # [['Washington Redskins', '[30]', '1', 'ORG']]
                 term_name = term[0]
                 term_positions = json.loads(term[1])
                 term_tf = int(term[2])
                 graph.add_node(Node(term_name, "term", term_positions, term_tf))
 
         # Determine node weighs
-        N = graph.nr_nodes()
-        n_stat = index_utils.stats()["documents"]
-        for node_name, node in graph.nodes.items():
-            weight = 0.0
-            if term_tfidf > 0:
-                tf = tf_func(node, N)
+        calculate_node_weights(graph, docid, index_utils, term_tfidf, term_position)
 
-                if node.node_type == "term":
-                    df = (
-                        index_utils.get_term_counts(
-                            utils.clean_NE_term(node_name), analyzer=None
-                        )[0]
-                        + 1e-5
-                    )
-                    weight += utils.tfidf(tf, df, n_stat)
-                else:
-                    weight += tf
-
-            if term_position > 0:
-                weight += term_position * position_in_text(node, docid, index_utils)
-
-            node.weight = weight
-
-        # Enity weights differ in magnitide from terms,
+        # Enity weights differ from terms in magnitide,
         # since they are tf only (normalize both individually).
         equalize_term_and_entities(graph)
 
-        embeddings_not_found = 0
         # Initialize edges + weights
-        for node_key in graph.nodes.keys():
-            for other_node_key in graph.nodes.keys():
-                if node_key == other_node_key:
-                    continue
-
-                weight = 0.0
-                if text_distance > 0:
-                    distance = closest_distance(
-                        graph.nodes[node_key], graph.nodes[other_node_key]
-                    )
-                    weight += text_distance * distance_in_text(distance)
-
-                if term_embedding > 0:
-                    weight += term_embedding * edge_embedding_weight(
-                        graph.nodes[node_key],
-                        graph.nodes[other_node_key],
-                        embeddings,
-                        embeddings_not_found,
-                    )
-
-                if weight > 0.0:
-                    graph.add_edge(node_key, other_node_key, weight)
+        initialize_edges(graph, text_distance, term_embedding, embeddings)
 
 
 def tf_func(node, N: int) -> float:
@@ -173,3 +129,54 @@ def equalize_term_and_entities(graph):
             node.weight = normalized_term_weights[node]
         else:
             node.weight = normalized_entity_weights[node]
+
+
+def calculate_node_weights(graph, docid, index_utils, term_tfidf, term_position):
+    N = graph.nr_nodes()
+    n_stat = index_utils.stats()["documents"]
+    for node_name, node in graph.nodes.items():
+        weight = 0.0
+        if term_tfidf > 0:
+            tf = tf_func(node, N)
+
+            if node.node_type == "term":
+                df = (
+                    index_utils.get_term_counts(
+                        utils.clean_NE_term(node_name), analyzer=None
+                    )[0]
+                    + 1e-5
+                )
+                weight += utils.tfidf(tf, df, n_stat)
+            else:
+                weight += tf
+
+        if term_position > 0:
+            weight += term_position * position_in_text(node, docid, index_utils)
+
+        node.weight = weight
+
+
+def initialize_edges(graph, text_distance, term_embedding, embeddings):
+    embeddings_not_found = 0
+    for node_key in graph.nodes.keys():
+        for other_node_key in graph.nodes.keys():
+            if node_key == other_node_key:
+                continue
+
+            weight = 0.0
+            if text_distance > 0:
+                distance = closest_distance(
+                    graph.nodes[node_key], graph.nodes[other_node_key]
+                )
+                weight += text_distance * distance_in_text(distance)
+
+            if term_embedding > 0:
+                weight += term_embedding * edge_embedding_weight(
+                    graph.nodes[node_key],
+                    graph.nodes[other_node_key],
+                    embeddings,
+                    embeddings_not_found,
+                )
+
+            if weight > 0.0:
+                graph.add_edge(node_key, other_node_key, weight)
