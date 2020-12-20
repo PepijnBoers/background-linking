@@ -18,4 +18,4 @@ RUN cd /opt/background-linking/ && \
 
 WORKDIR "/opt/background-linking/bglinking"
 
-ENTRYPOINT ["python3", "reranker.py"]
+ENTRYPOINT ["python3", "-u", "reranker.py"]
