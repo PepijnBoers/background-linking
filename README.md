@@ -1,6 +1,6 @@
 # Background Linking
 <p>
-<a href="https://github.com/PepijnBoers/background-linking/actions"><img alt="Actions Status" src="https://github.com/PepijnBoers/background-linking/workflows/main/badge.svg"></a>
+<a href="https://github.com/PepijnBoers/background-linking/actions"><img alt="Actions Status" src="https://github.com/PepijnBoers/background-linking/workflows/Code/badge.svg"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 </p>
 Code to replicate my experiments for background linking in TREC News
