@@ -272,7 +272,7 @@ if args.year != 20:
     os.system(
         (
             "/opt/anserini-tools/eval/trec_eval.9.0.4/trec_eval -c -M1000 -m map"
-            f"-m ndcg_cut -m P.10 resources/topics-and-qrels/{args.qrels}"
+            f" -m ndcg_cut -m P.10 resources/topics-and-qrels/{args.qrels}"
             f" resources/output/{args.output}"
         )
     )
