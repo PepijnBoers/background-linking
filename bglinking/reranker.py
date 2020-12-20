@@ -1,7 +1,6 @@
 import argparse
 import os
 
-import numpy as np
 from pyserini import index
 from tqdm import tqdm
 
@@ -201,7 +200,7 @@ build_arguments = {
     "term_embedding": args.term_embedding,
 }
 
-# Read in topics via Pyserini.
+# Read topics from file
 topics = utils.read_topics_and_ids_from_file(
     f"resources/topics-and-qrels/{args.topics}"
 )
@@ -221,10 +220,12 @@ for topic_num, topic in tqdm(topics):
     ranking = {}
     addition_types = {}
 
-    # Loop over candidate documents and calculate similarity score.
+    # Read candidate docs for current topic.
     qid_docids = utils.read_docids_from_file(f"resources/candidates/{args.candidates}")
+
+    # Loop over candidate docs and calculate similarity score per doc.
     for docid in qid_docids[query_num]:
-        # Create graph object.
+        # Create graph for candidate.
         fname = f"candidate_article_{query_num}_{docid}"
         candidate_graph = Graph(docid, fname)
         candidate_graph.set_graph_comparator(comparator)
@@ -236,10 +237,15 @@ for topic_num, topic in tqdm(topics):
         if args.textrank:
             candidate_graph.rank()
 
-        relevance, diversity_type = candidate_graph.compare(
+        # Calculate relevance score + diversity type
+        relevance_score, diversity_type = candidate_graph.compare(
             query_graph, args.novelty, args.node_edge_l
         )
-        ranking[docid] = relevance
+
+        # Store relevance score in dict
+        ranking[docid] = relevance_score
+
+        # Store diversity type in dict
         addition_types[docid] = diversity_type
 
     # Sort retrieved documents according to new similarity score.
@@ -250,27 +256,9 @@ for topic_num, topic in tqdm(topics):
         }
     )
 
-    # Diversify
+    # Diversify results (filter)
     if args.diversify:
-        nr_types = len(
-            np.unique([item for sublist in addition_types.values() for item in sublist])
-        )
-        present_types = []
-        to_delete_docids = []
-        for key in sorted_ranking.keys():
-            if len(present_types) == nr_types:
-                break
-            if len(addition_types[key]) > 1:
-                new_types = utils.not_in_list_2(addition_types[key], present_types)
-                if len(new_types) > 0:
-                    present_types.append([new_types[0]])
-                else:
-                    to_delete_docids.append(key)
-            else:
-                if addition_types[key] not in present_types:
-                    present_types.append(addition_types[key])
-                else:
-                    to_delete_docids.append(key)
+        to_delete_docids = utils.diversity_filter(addition_types, sorted_ranking)
         for key in to_delete_docids[:85]:  # delete max 85 documents per topic.
             del sorted_ranking[key]
 

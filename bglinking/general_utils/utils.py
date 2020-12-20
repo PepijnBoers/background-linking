@@ -205,7 +205,7 @@ def create_top_n_tfidf_vector(
     index_utils, docid: str, n: int, t: int, total_N=595031
 ) -> dict:
     """Create list of top N terms with highest tfidf in a document
-       accompanied with their tf."""
+    accompanied with their tf."""
     # retrieve already analyzed terms in dict: tf
     tf = index_utils.get_document_vector(docid)
 
@@ -397,3 +397,26 @@ def get_keys_max_values(dictionary: dict):
             max_types = [key]
             max_value = value
     return max_types
+
+
+def diversity_filter(addition_types, sorted_ranking):
+    nr_types = len(
+        np.unique([item for sublist in addition_types.values() for item in sublist])
+    )
+    present_types = []
+    to_delete_docids = []
+    for key in sorted_ranking.keys():
+        if len(present_types) == nr_types:
+            break
+        if len(addition_types[key]) > 1:
+            new_types = not_in_list_2(addition_types[key], present_types)
+            if len(new_types) > 0:
+                present_types.append([new_types[0]])
+            else:
+                to_delete_docids.append(key)
+        else:
+            if addition_types[key] not in present_types:
+                present_types.append(addition_types[key])
+            else:
+                to_delete_docids.append(key)
+    return to_delete_docids
