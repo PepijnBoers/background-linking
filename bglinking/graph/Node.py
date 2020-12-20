@@ -3,10 +3,10 @@ class Node:
         self.__name = name
         self.__node_type = node_type
         self.__locations = locations
-        self.__tf = tf 
+        self.__tf = tf
         self.__weight = 0.0
 
-        self.tfidf = 0.0 # unused
+        self.tfidf = 0.0  # unused
 
     @property
     def name(self):
@@ -48,9 +48,8 @@ class Node:
         self.__tf = tf
 
     def __str__(self):
-        if self.__node_type != 'term':
-            name = self.__name.replace(' ', '_')
-            return f'ENTITY/{name}'
+        if self.__node_type != "term":
+            name = self.__name.replace(" ", "_")
+            return f"ENTITY/{name}"
         else:
             return self.__name
-
