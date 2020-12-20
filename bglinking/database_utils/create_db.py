@@ -8,12 +8,11 @@ def create_db(db_name):
     c = conn.cursor()
     c.execute(
         """CREATE TABLE "entities" (
-		"id"	integer,
-		"docid"	text,
-		"entity_ids"	text,
-		"tfidf_terms"	text,
-		PRIMARY KEY("id")
-			)"""
+        "id"	integer,
+        "docid"	text,
+        "entity_ids"	text,
+        "tfidf_terms"	text,
+        PRIMARY KEY("id"))"""
     )
     conn.commit()
     conn.close()
@@ -24,13 +23,12 @@ def create_db_dbpedia():
     c = conn.cursor()
     c.execute(
         """CREATE TABLE "entities" (
-		"id"	integer,
-		"doc_id"	text,
-		"para_id"	text,
-		"text"	text,
-		"entity_ids"	text,
-		PRIMARY KEY("id")
-			)"""
+        "id"	integer,
+        "doc_id"	text,
+        "para_id"	text,
+        "text"	text,
+        "entity_ids"	text,
+        PRIMARY KEY("id"))"""
     )
 
     conn.commit()

@@ -26,16 +26,21 @@ class GMCSComparator(InformalGraphComparatorInterface):
         common_edges,
         node_edge_l,
     ) -> float:
-        l = node_edge_l  # node over edge importance
         sum_nodes_a = sum([node.weight for node in nodes_a.values()])
         sum_nodes_b = sum([node.weight for node in nodes_b.values()])
 
         sum_edges_a = sum([weight for weight in edges_a.values()])
         sum_edges_b = sum([weight for weight in edges_b.values()])
 
-        nodes = l * (sum(common_nodes.values(), 0)) / max(sum_nodes_a, sum_nodes_b, 1)
+        nodes = (
+            node_edge_l
+            * (sum(common_nodes.values(), 0))
+            / max(sum_nodes_a, sum_nodes_b, 1)
+        )
         edges = (
-            (1 - l) * sum(common_edges.values(), 0) / max(sum_edges_a, sum_edges_b, 1)
+            (1 - node_edge_l)
+            * sum(common_edges.values(), 0)
+            / max(sum_edges_a, sum_edges_b, 1)
         )
 
         return nodes + edges
