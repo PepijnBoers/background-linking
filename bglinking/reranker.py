@@ -260,7 +260,7 @@ for topic_num, topic in tqdm(topics):
     if args.diversify:
         to_delete_docids = utils.diversity_filter(addition_types, sorted_ranking)
         for key in to_delete_docids[:85]:  # delete max 85 documents per topic.
-                del sorted_ranking[key]
+            del sorted_ranking[key]
 
     # Store results in txt file.
     utils.write_to_results_file(
