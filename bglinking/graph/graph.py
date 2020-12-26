@@ -1,7 +1,7 @@
+import operator
 from collections import defaultdict
 
-from bglinking.graph.graph_builders.DefaultGraphBuilder import \
-    DefaultGraphBuilder
+from bglinking.graph.graph_builders.DefaultGraphBuilder import DefaultGraphBuilder
 from bglinking.graph.graph_comparators.GMCSComparator import GMCSComparator
 from bglinking.graph.graph_rankers.DefaultGraphRanker import DefaultGraphRanker
 
@@ -24,14 +24,22 @@ class Graph:
 
     def build(self, **kwargs):
         # Append local docid to kwargs.
-        kwargs['docid'] = self.docid
-        self.graph_builder.build(self, **kwargs)
+        kwargs["docid"] = self.docid
+        kwargs["graph"] = self
+        self.graph_builder.build(**kwargs)
 
     def rank(self):
         self.graph_ranker.rank(self.__nodes, self.__edges)
 
     def compare(self, graph, novelty_percentage, node_edge_l):
-        return self.graph_comparator.compare(self, graph, novelty_percentage, node_edge_l)
+        return self.graph_comparator.compare(
+            self, graph, novelty_percentage, node_edge_l
+        )
+
+    def diversity_type(self):
+        entity_nodes = [node for node in self.__nodes if node.node_type != "term"]
+        entity_types = type_distribution(entity_nodes)
+        return max(entity_types.iteritems(), key=operator.itemgetter(1))[0]
 
     @property
     # @utils.limit_set
@@ -72,3 +80,10 @@ class Graph:
 
     def nr_nodes(self) -> int:
         return len(list(self.nodes.keys()))
+
+
+def type_distribution(nodes):
+    distribution = defaultdict(float)
+    for node in nodes.values():
+        distribution[node.node_type] += 1
+    return distribution

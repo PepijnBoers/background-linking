@@ -15,7 +15,7 @@ bglinking.egg-info
 tests/*.pyc
 tests/playground.py
 
-# ignore selected items in trec-news
+# ignore selected resources
 bglinking/output/graphs/*/*
 bglinking/output/docids/*.txt
 bglinking/database_utils/db
@@ -24,7 +24,7 @@ bglinking/database_utils/examples
 bglinking/resources/db/*.db
 bglinking/resources/Index/*/
 bglinking/resources/embeddings/*/
-bglinking/resources/topics-and-qrels/topics.backgroundlinking20.txt
+bglinking/resources/topics-and-qrels/*20.txt
 bglinking/resources/candidates/*.txt
 bglinking/resources/output/*.txt
 

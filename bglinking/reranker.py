@@ -1,13 +1,12 @@
 import argparse
 import os
 
-from pyserini import index
-from tqdm import tqdm
-
 from bglinking.database_utils import db_utils
 from bglinking.general_utils import utils
 from bglinking.graph.graph import Graph
 from bglinking.graph.graph_comparators.GMCSComparator import GMCSComparator
+from pyserini import index
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -238,9 +237,12 @@ for topic_num, topic in tqdm(topics):
             candidate_graph.rank()
 
         # Calculate relevance score + diversity type
-        relevance_score, diversity_type = candidate_graph.compare(
+        relevance_score = candidate_graph.compare(
             query_graph, args.novelty, args.node_edge_l
         )
+
+        # Obtain diversity type
+        diversity_type = candidate_graph.diversity_type
 
         # Store relevance score in dict
         ranking[docid] = relevance_score
@@ -267,12 +269,11 @@ for topic_num, topic in tqdm(topics):
         sorted_ranking, query_num, args.run_tag, f"resources/output/{args.output}"
     )
 
-if args.year != 20:
-    # Evaluate performance with trec_eval.
-    os.system(
-        (
-            "/opt/anserini-tools/eval/trec_eval.9.0.4/trec_eval -c -M1000 -m map"
-            f" -m ndcg_cut -m P.10 resources/topics-and-qrels/{args.qrels}"
-            f" resources/output/{args.output}"
-        )
+# Evaluate performance with trec_eval.
+os.system(
+    (
+        "/opt/anserini-tools/eval/trec_eval.9.0.4/trec_eval -c -M1000 -m map"
+        f" -m ndcg_cut -m P.10 resources/topics-and-qrels/{args.qrels}"
+        f" resources/output/{args.output}"
     )
+)
