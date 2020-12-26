@@ -1,8 +1,6 @@
 import warnings
-from collections import defaultdict
 
 import numpy as np
-from bglinking.general_utils import utils
 from bglinking.graph.graph_comparators.InformalGraphComparatorInterface import (
     InformalGraphComparatorInterface,
 )

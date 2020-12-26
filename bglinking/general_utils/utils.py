@@ -194,7 +194,7 @@ def bm25(idf: float, tf: float, k=0.5, b=0.5, dlen=1.0, avg_dlen=1.0) -> float:
     return idf * (tf * (k + 1) / (tf + (k * (1 - b + b * (dlen / avg_dlen)))))
 
 
-#!ref refactor to filter_term; in DefaultGraphBuilder.py
+# !ref refactor to filter_term; in DefaultGraphBuilder.py
 def clean_NE_term(term: str) -> str:
     term = re.sub(r"\([^)]*\)", "", term)
     term = re.sub(r"[,_]+", " ", term)
