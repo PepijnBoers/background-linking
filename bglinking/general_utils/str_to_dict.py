@@ -7,28 +7,30 @@ import decimal
 
 def turn_into_dict(source: str) -> dict:
     """Transform string into dictionary."""
-    tree = ast.parse(source, mode='eval')
+    tree = ast.parse(source, mode="eval")
 
     # using the NodeTransformer, you can also modify the nodes in the tree,
     # however in this example NodeVisitor could do as we are raising exceptions
     # only.
     class Transformer(ast.NodeTransformer):
-        ALLOWED_NAMES = set(['Decimal', 'None', 'False',
-                             'false', 'True', 'true', 'null'])
-        ALLOWED_NODE_TYPES = set([
-            'Expression',  # a top node for an expression
-            'Tuple',      # makes a tuple
-            'Call',       # a function call (hint, Decimal())
-            'Name',       # an identifier...
-            'Load',       # loads a value of a variable with given identifier
-            'Str',        # a string literal
-
-            'Num',        # allow numbers too
-            'List',       # and list literals
-            'Dict',       # and dicts...
-            'UnaryOp',
-            'USub',
-        ])
+        ALLOWED_NAMES = set(
+            ["Decimal", "None", "False", "false", "True", "true", "null"]
+        )
+        ALLOWED_NODE_TYPES = set(
+            [
+                "Expression",  # a top node for an expression
+                "Tuple",  # makes a tuple
+                "Call",  # a function call (hint, Decimal())
+                "Name",  # an identifier...
+                "Load",  # loads a value of a variable with given identifier
+                "Str",  # a string literal
+                "Num",  # allow numbers too
+                "List",  # and list literals
+                "Dict",  # and dicts...
+                "UnaryOp",
+                "USub",
+            ]
+        )
 
         def visit_Name(self, node):
             if node.id not in self.ALLOWED_NAMES:
@@ -40,8 +42,7 @@ def turn_into_dict(source: str) -> dict:
         def generic_visit(self, node):
             nodetype = type(node).__name__
             if nodetype not in self.ALLOWED_NODE_TYPES:
-                raise RuntimeError(
-                    f"Invalid expression: {nodetype} not allowed")
+                raise RuntimeError(f"Invalid expression: {nodetype} not allowed")
 
             return ast.NodeTransformer.generic_visit(self, node)
 
@@ -51,10 +52,18 @@ def turn_into_dict(source: str) -> dict:
     transformer.visit(tree)
 
     # compile the ast into a code object
-    clause = compile(tree, '<AST>', 'eval')
+    clause = compile(tree, "<AST>", "eval")
 
     # make the globals contain only the Decimal class,
     # and eval the compiled object
-    result = eval(clause, {'Decimal': decimal.Decimal, 'false': False,
-                           'true': True, 'null': None, 'UnaryOp': ast.UnaryOp})
+    result = eval(
+        clause,
+        {
+            "Decimal": decimal.Decimal,
+            "false": False,
+            "true": True,
+            "null": None,
+            "UnaryOp": ast.UnaryOp,
+        },
+    )
     return result

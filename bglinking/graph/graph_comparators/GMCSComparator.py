@@ -1,8 +1,6 @@
 import warnings
-from collections import defaultdict
 
 import numpy as np
-from bglinking.general_utils import utils
 from bglinking.graph.graph_comparators.InformalGraphComparatorInterface import (
     InformalGraphComparatorInterface,
 )
@@ -10,33 +8,40 @@ from scipy import stats
 
 
 class GMCSComparator(InformalGraphComparatorInterface):
-    def type_distribution(self, nodes):
-        distribution = defaultdict(float)
-        for node in nodes.values():
-            distribution[node.node_type] += 1
-        return distribution
+    def similarity(self, graph_a, graph_b, common_nodes, common_edges, node_edge_l):
+        """Return similarity score between two graphs based on the Greatest Common Subgraph.
 
-    def similarity(
-        self,
-        nodes_a,
-        edges_a,
-        nodes_b,
-        edges_b,
-        common_nodes,
-        common_edges,
-        node_edge_l,
-    ) -> float:
-        sum_nodes_a = sum([node.weight for node in nodes_a.values()])
-        sum_nodes_b = sum([node.weight for node in nodes_b.values()])
+        Parameters
+        ----------
+        graph_a : Graph
+            Graph A
+        graph_b : Graph
+            Graph B
+        common_nodes : dict
+            Overlapping nodes graph A & B
+        common_edges : dict
+            Overlapping edges graph A & B
+        node_edge_l : float
+            Node-edge priority; higher is node priority
 
-        sum_edges_a = sum([weight for weight in edges_a.values()])
-        sum_edges_b = sum([weight for weight in edges_b.values()])
+        Returns
+        -------
+        float
+            Similarity score
+        """
+        sum_nodes_a = sum([node.weight for node in graph_a.nodes.values()])
+        sum_nodes_b = sum([node.weight for node in graph_b.nodes.values()])
+        sum_edges_a = sum([weight for weight in graph_a.edges.values()])
+        sum_edges_b = sum([weight for weight in graph_b.edges.values()])
 
+        # Similarity nodes.
         nodes = (
             node_edge_l
             * (sum(common_nodes.values(), 0))
             / max(sum_nodes_a, sum_nodes_b, 1)
         )
+
+        # Similarity edges.
         edges = (
             (1 - node_edge_l)
             * sum(common_edges.values(), 0)
@@ -45,73 +50,70 @@ class GMCSComparator(InformalGraphComparatorInterface):
 
         return nodes + edges
 
-    def novelty(self, que_graph, can_graph, common_nodes) -> float:
-        # determine weight thresholdhold! to be important node
-        new_info = {}
-
+    def novelty(self, can_graph, common_nodes) -> float:
+        # Determine weight threshold for novel nodes (mean).
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             weight_threshold = np.mean(list(can_graph.edges.values()))
 
-        i = 0
-        added_nodes = []
-        for edge, weight in can_graph.edges.items():
-            # overlap should be 1, meaning there is exactly 1 node in common nodes.
-            if len(set(edge) & set(common_nodes)) == 1 and weight > weight_threshold:
-                new_node = np.setdiff1d(edge, common_nodes)[0]
-                if new_node not in added_nodes:
-                    i += 1
-                    new_info[new_node] = can_graph.nodes[new_node]
-                    added_nodes.append(new_node)
+        # Extract novel nodes.
+        novel_nodes = extract_novel_nodes(can_graph, common_nodes, weight_threshold)
 
-        additional_distributions = self.type_distribution(new_info)
+        # Calculate novelty & total node score
+        novelty_score = sum(novel_nodes.values())
+        total_graph_score = sum([node.weight for node in can_graph.nodes.values()])
 
-        not_matching_candidate_node_weights = [
-            can_graph.nodes[key].weight
-            for key in set(can_graph.nodes) - set(common_nodes)
-        ]
-        if len(not_matching_candidate_node_weights) == 0:
-            return (0.0, utils.get_keys_max_values(additional_distributions))
+        # Normalize score
+        normalized_novelty_score = novelty_score / (total_graph_score + 1e-5)
 
-        additional_node_weights = [node.weight for node in new_info.values()]
-        novelty = sum(additional_node_weights) / sum(
-            not_matching_candidate_node_weights
-        )
+        return normalized_novelty_score
 
-        return (novelty, utils.get_keys_max_values(additional_distributions))
-
-    def compare(
-        self, graph_a, graph_b, novelty_percentage, node_edge_l=0.5
-    ) -> (float, float):
-        """Compare graph A with graph B and calculate similarity score.
+    def compare(self, graph_a, graph_b, novelty_percentage, node_edge_l=0.5) -> float:
+        """Calculate relevance score for graph A with graph B based on:
+        - similarity score
+        - novelty score
 
         Returns
         -------
         (float, float)
-            node similarity, edge similarity
+            Relevance score, diversity type
         """
-        nodes_a = graph_a.nodes
-        edges_a = graph_a.edges
-        nodes_b = graph_b.nodes
-        edges_b = graph_b.edges
-
+        # Create dictionary of common nodes {node_name: node_weight}.
         common_nodes = {
             node_name: node_obj.weight
-            for node_name, node_obj in nodes_a.items()
-            if node_name in nodes_b.keys()
-        }
-        common_edges = {
-            edge: weight for edge, weight in edges_a.items() if edge in edges_b.keys()
+            for node_name, node_obj in graph_a.nodes.items()
+            if node_name in graph_b.nodes.keys()
         }
 
+        # Create dictionary of common edges {edge: weight}.
+        common_edges = {
+            edge: weight
+            for edge, weight in graph_a.edges.items()
+            if edge in graph_b.edges.keys()
+        }
+
+        # Calculate similarity score between common nodes and edges.
         similarity_score = (1 - novelty_percentage) * self.similarity(
-            nodes_a, edges_a, nodes_b, edges_b, common_nodes, common_edges, node_edge_l
+            graph_a, graph_b, common_nodes, common_edges, node_edge_l
         )
 
-        novelty_score, diversity_type = self.novelty(graph_b, graph_a, common_nodes)
+        # Calculate novelty score between two graphs.
+        novelty_score = self.novelty(graph_a, common_nodes)
         novelty_score = float(novelty_percentage * novelty_score)
 
-        return (
-            stats.hmean([similarity_score + 1e-05, novelty_score + 1e-05]),
-            diversity_type,
-        )
+        # Calculate harmonic mean between similarity and nvoelty.
+        harmonic_mean = stats.hmean([similarity_score + 1e-05, novelty_score + 1e-05])
+
+        return harmonic_mean
+
+
+def extract_novel_nodes(graph, common_nodes, weight_threshold):
+    novel_nodes = {}
+    # Search for novel nodes.
+    for edge, weight in graph.edges.items():
+        # overlap should be 1, meaning there is only 1 connection.
+        if len(set(edge) & set(common_nodes)) == 1 and weight > weight_threshold:
+            novel_node = np.setdiff1d(edge, common_nodes)[0]
+            if novel_node not in novel_nodes.keys():
+                novel_nodes[novel_node] = graph.nodes[novel_node].weight
+    return novel_nodes  # {"term": weight, ..}

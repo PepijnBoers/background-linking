@@ -4,80 +4,169 @@ import logging
 import numpy as np
 from bglinking.database_utils import db_utils as db_utils
 from bglinking.general_utils import utils
-from bglinking.graph.graph_builders.InformalGraphBuilderInterface import (
-    InformalGraphBuilderInterface,
-)
 from bglinking.graph.Node import Node
 
 
-class DefaultGraphBuilder(InformalGraphBuilderInterface):
-    def build(
-        self,
-        graph,
-        cursor,
-        embeddings,
-        index_utils,
-        docid,
-        use_entities,
-        nr_terms=0,
-        term_tfidf=0.0,
-        term_position=0.0,
-        text_distance=0.0,
-        term_embedding=0.0,
-    ):
+class DefaultGraphBuilder:
+    def build(self, **kwargs):
         # Retrieve named entities from database.
-        if use_entities:
-            entities = db_utils.get_entities_from_docid(cursor, docid, "entity_ids")
-
-            # Create nodes for named entities
-            # [['Washington Redskins', '[30]', '1', 'ORG']]
-            for entity in entities:
-                ent_name = entity[0]
-                try:
-                    ent_positions = json.loads(entity[1])
-                except Exception as e:
-                    print(f"issue with enitity: {entity[1]}")
-                    logging.exception(e)
-                    continue
-                ent_tf = int(entity[2])
-                ent_type = entity[3]
-
-                graph.add_node(Node(ent_name, ent_type, ent_positions, ent_tf))
+        if kwargs["use_entities"]:
+            add_named_entities_to_graph(
+                kwargs["graph"], kwargs["cursor"], kwargs["docid"]
+            )
 
         # Retrieve top n tfidf terms from database.
-        if nr_terms > 0.0:
-            terms = db_utils.get_entities_from_docid(cursor, docid, "tfidf_terms")[
-                :nr_terms
-            ]
+        if kwargs["nr_terms"] > 0:
+            add_terms_to_graph(
+                kwargs["graph"], kwargs["cursor"], kwargs["docid"], kwargs["nr_terms"]
+            )
 
-            # Create nodes for tfidf terms
-            for term in terms:  # [['Washington Redskins', '[30]', '1', 'ORG']]
-                term_name = term[0]
-                term_positions = json.loads(term[1])
-                term_tf = int(term[2])
-                graph.add_node(Node(term_name, "term", term_positions, term_tf))
+        # Set node weighs
+        calculate_node_weights(
+            kwargs["graph"],
+            kwargs["docid"],
+            kwargs["index_utils"],
+            kwargs["term_tfidf"],
+            kwargs["term_position"],
+        )
 
-        # Determine node weighs
-        calculate_node_weights(graph, docid, index_utils, term_tfidf, term_position)
+        # Normalize node weights: enity (tf) and terms (tfidf).
+        normalize_node_weights(kwargs["graph"])
 
-        # Enity weights differ from terms in magnitide,
-        # since they are tf only (normalize both individually).
-        equalize_term_and_entities(graph)
+        # Create edges and set edge weights
+        initialize_edges(
+            kwargs["graph"],
+            kwargs["text_distance"],
+            kwargs["term_embedding"],
+            kwargs["embeddings"],
+        )
 
-        # Initialize edges + weights
-        initialize_edges(graph, text_distance, term_embedding, embeddings)
+
+# ----- Start building graph -----
+def add_named_entities_to_graph(graph, cursor, docid):
+    """Retrieves named entities from the database and adds them to the graph."""
+    # Retrieve named entities for current docid
+    entities = db_utils.get_entities_from_docid(cursor, docid, "entity_ids")
+
+    # Create node for each entity
+    for entity in entities:  # [['Washington Redskins', '[30]', '1', 'ORG'], ..]
+        entity_name = entity[0]
+        entity_tf = int(entity[2])
+        entity_type = entity[3]
+
+        # Convert list string to list (fails occasionally)
+        try:
+            ent_positions = json.loads(entity[1].replace(";", ""))
+        except Exception as e:
+            print(f"issue with enitity: {entity[1]}, docid: {docid}")
+            logging.exception(e)
+            continue
+
+        # Add node to graph
+        graph.add_node(Node(entity_name, entity_type, ent_positions, entity_tf))
 
 
-def tf_func(node, N: int) -> float:
+def add_terms_to_graph(graph, cursor, docid, nr_terms):
+    """Adds n tfidf terms to the graph."""
+    # Retrieve n terms from database
+    terms = db_utils.get_entities_from_docid(cursor, docid, "tfidf_terms")[:nr_terms]
+
+    # Create node for each term
+    for term in terms:
+        term_name = term[0]
+        term_positions = json.loads(term[1])
+        term_tf = int(term[2])
+        graph.add_node(Node(term_name, "term", term_positions, term_tf))
+
+
+# ----- End building graph -----
+
+# ----- Normalize node weights -----
+def normalize_node_weights(graph):
+    """Make entity(tf) & term(tf-idf) weights comparable in magnitude."""
+    term_weights = {"dummy0000": 0.0}
+    entity_weights = {"dummy0000": 0.0}
+
+    # Distinguish between terms and entities.
+    for node in graph.nodes.values():
+        if node.node_type == "term":
+            term_weights[node] = node.weight
+        else:
+            entity_weights[node] = node.weight
+
+    # Normalize both individually (weights between 0-1).
+    normalized_term_weights = utils.normalize_dict(term_weights)
+    normalized_entity_weights = utils.normalize_dict(entity_weights)
+
+    # Delete dummies.
+    del normalized_term_weights["dummy0000"]
+    del normalized_entity_weights["dummy0000"]
+
+    # Write normalized weights to graph.
+    for node in graph.nodes.values():
+        if node.node_type == "term":
+            node.weight = normalized_term_weights[node]
+        else:
+            node.weight = normalized_entity_weights[node]
+
+
+# ----- Start node weights section -----
+def tf_score(node, N) -> float:
     if node.tf == 1:
         return 1 / N
     else:
         return (1 + np.log(node.tf - 1)) / N
 
 
-def position_in_text(node: Node, docid: str, index_utils) -> float:
+def node_weight_tf(index_utils, graph, node, node_name):
+    """Return tf(idf) node weight; idf only for terms."""
+    tf = tf_score(node, graph.nr_nodes())
+    nr_documents = index_utils.stats()["documents"]
+
+    if node.node_type == "term":
+        # term --> return tfidf
+        filtered_term = utils.clean_NE_term(node_name)
+        df = index_utils.get_term_counts(filtered_term, analyzer=None)[0] + 1e-5
+        return utils.tfidf(tf, df, nr_documents)
+    else:
+        # named entity --> return tf
+        return tf
+
+
+def node_weight_position(node: Node, docid: str) -> float:
     # location refers to the earliest paragraph index (starts at 0, so +1).
     return 1 / (min(node.locations) + 1)
+
+
+def calculate_node_weights(graph, docid, index_utils, term_tfidf, term_position):
+    for node_name, node in graph.nodes.items():
+        # Set weight to 0.0 to be sure.
+        node.weight = 0.0
+
+        # (1) tf(idf) weight; only idf for terms.
+        if term_tfidf > 0:
+            node.weight += term_tfidf * node_weight_tf(
+                index_utils, graph, node, node_name
+            )
+
+        # (2) position weight.
+        if term_position > 0:
+            node.weight += term_position * node_weight_position(node, docid)
+
+
+# ----- End node weights section -----
+
+
+# ----- Start edge initialization & weights section -----
+def closest_distance(node_a, node_b):
+    """Calculate closest distance between text locatios."""
+    min_distance = 999999
+    for loc_a in node_a.locations:
+        for loc_b in node_b.locations:
+            distance = abs(loc_a - loc_b)
+            if distance < min_distance:
+                min_distance = distance
+    return min_distance
 
 
 def distance_in_text(distance: int) -> float:
@@ -87,96 +176,44 @@ def distance_in_text(distance: int) -> float:
         return 0.0
 
 
-def edge_embedding_weight(node_a, node_b, embeddings, embeddings_not_found):
+def term_similarity(node_a, node_b, embeddings):
+    """Calculate similarity between terms in word embedding."""
     try:
         similarity = embeddings.similarity(node_a.__str__(), node_b.__str__())
     except Exception as e:
-        # print(f'Wd did not found: {node_a.__str__()}, {node_b.__str__()}')
+        # If term(s) does not occur in embedding similarity is always 0.
         similarity = 0
         logging.exception(e)
     return similarity
 
 
-def closest_distance(node_a, node_b):
-    min_distance = 999999
-    for locations in node_a.locations:
-        for other_locations in node_b.locations:
-            distance = abs(locations - other_locations)
-            if distance < min_distance:
-                min_distance = distance
-    return min_distance
-
-
-def equalize_term_and_entities(graph):
-    """Normalize NE weights and tf-idf weights to obtain comparable weight."""
-    term_weights = {"dummy0000": 0.0}
-    entity_weights = {"dummy0000": 0.0}
-
-    for node in graph.nodes.values():
-        if node.node_type == "term":
-            term_weights[node] = node.weight
-        else:
-            entity_weights[node] = node.weight
-
-    normalized_term_weights = utils.normalize_dict(term_weights)
-    normalized_entity_weights = utils.normalize_dict(entity_weights)
-
-    del normalized_term_weights["dummy0000"]
-    del normalized_entity_weights["dummy0000"]
-
-    for node in graph.nodes.values():
-        if node.node_type == "term":
-            node.weight = normalized_term_weights[node]
-        else:
-            node.weight = normalized_entity_weights[node]
-
-
-def calculate_node_weights(graph, docid, index_utils, term_tfidf, term_position):
-    N = graph.nr_nodes()
-    n_stat = index_utils.stats()["documents"]
-    for node_name, node in graph.nodes.items():
-        weight = 0.0
-        if term_tfidf > 0:
-            tf = tf_func(node, N)
-
-            if node.node_type == "term":
-                df = (
-                    index_utils.get_term_counts(
-                        utils.clean_NE_term(node_name), analyzer=None
-                    )[0]
-                    + 1e-5
-                )
-                weight += utils.tfidf(tf, df, n_stat)
-            else:
-                weight += tf
-
-        if term_position > 0:
-            weight += term_position * position_in_text(node, docid, index_utils)
-
-        node.weight = weight
-
-
 def initialize_edges(graph, text_distance, term_embedding, embeddings):
-    embeddings_not_found = 0
+    """Initialize edges based on weight function(s)."""
+    # For each node check connection with other nodes.
     for node_key in graph.nodes.keys():
         for other_node_key in graph.nodes.keys():
+            weight = 0.0
+            node_a = graph.nodes[node_key]
+            node_b = graph.nodes[other_node_key]
+
+            # Skip self connection.
             if node_key == other_node_key:
                 continue
 
-            weight = 0.0
+            # (1) Edges based on text distance.
             if text_distance > 0:
-                distance = closest_distance(
-                    graph.nodes[node_key], graph.nodes[other_node_key]
-                )
+                distance = closest_distance(node_a, node_b)
                 weight += text_distance * distance_in_text(distance)
 
+            # (2) Edges based on term embeddings.
             if term_embedding > 0:
-                weight += term_embedding * edge_embedding_weight(
-                    graph.nodes[node_key],
-                    graph.nodes[other_node_key],
-                    embeddings,
-                    embeddings_not_found,
-                )
+                similarity = term_similarity(node_a, node_b, embeddings)
+                weight += term_embedding * similarity
 
-            if weight > 0.0:
+            # Add edge if edge weight is above threshold.
+            edge_threshold = 0.0
+            if weight > edge_threshold:
                 graph.add_edge(node_key, other_node_key, weight)
+
+
+# ----- End edge initialization & weights section -----
