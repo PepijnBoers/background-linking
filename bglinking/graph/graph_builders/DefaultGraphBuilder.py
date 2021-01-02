@@ -59,7 +59,7 @@ def add_named_entities_to_graph(graph, cursor, docid):
             ent_positions = json.loads(entity[1].replace(";", ""))
         except Exception as e:
             print(f"issue with enitity: {entity[1]}, docid: {docid}")
-            logging.exception(e)
+            logging.info(e)
             continue
 
         # Add node to graph
@@ -183,7 +183,7 @@ def term_similarity(node_a, node_b, embeddings):
     except Exception as e:
         # If term(s) does not occur in embedding similarity is always 0.
         similarity = 0
-        logging.exception(e)
+        logging.info(e)
     return similarity
 
 
